@@ -31,11 +31,11 @@
 
 cmake_minimum_required (VERSION 3.13)
 
-project (pipeline_ecvl_eddl CXX)
+project (ecvl_hackaton CXX)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "")
-set(DOWNLOAD_MNIST ON CACHE BOOL "If flagged the mnist dataset will be automatically downloaded")
+set(DOWNLOAD_CHARSET ON CACHE BOOL "If flagged the charset dataset will be automatically downloaded")
 #--------------------------------------------------------------------------------------------------------
 # BEGIN: Check for c++17 support
 #--------------------------------------------------------------------------------------------------------
@@ -57,10 +57,10 @@ endif()
 #--------------------------------------------------------------------------------------------------------
 # BEGIN: static/dinamic runtime
 #--------------------------------------------------------------------------------------------------------
-set(pipeline_ecvl_eddl_STATIC ON CACHE BOOL "Whether to build static or dinamic libraries")
+set(ecvl_hackaton_STATIC ON CACHE BOOL "Whether to build static or dinamic libraries")
 
 if(MSVC)
-    if(pipeline_ecvl_eddl_STATIC)
+    if(ecvl_hackaton_STATIC)
         message(STATUS "Setting static runtime for MSVC")
         foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
             string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
@@ -79,17 +79,15 @@ endif()
 add_library(METRICS STATIC "")
 add_library(MODELS STATIC "")
 add_library(UTILS STATIC "")
-add_executable(MNIST_FIT)
-add_executable(MNIST_BATCH)
-add_executable(SKIN_LESION_CLASSIFICATION)
-add_executable(SKIN_LESION_SEGMENTATION)
+add_executable(DIGITS_CLASSIFICATION)
+add_executable(DIGITS_EXTRACTION)
 add_subdirectory(src)
-add_subdirectory("src/metrics")
 add_subdirectory("src/models")
 add_subdirectory("src/utils")
+add_subdirectory("src/metrics")
 
-# Set SKIN_LESION_CLASSIFICATION as default
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT SKIN_LESION_CLASSIFICATION)
+# Set DIGITS_CLASSIFICATION as default
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT DIGITS_CLASSIFICATION)
 
 set(ECVL_BUILD ON CACHE BOOL "Whether to build ECVL or not (requires ECVL)")
 
@@ -97,39 +95,62 @@ find_package(ecvl)
 if(ecvl_FOUND)
     target_link_libraries(METRICS ECVL_CORE ECVL_EDDL DATASET_PARSER)
     target_link_libraries(UTILS METRICS)
-    target_link_libraries(MODELS UTILS)
-    target_link_libraries(MNIST_FIT MODELS)
-    target_link_libraries(MNIST_BATCH MODELS)
-    target_link_libraries(SKIN_LESION_CLASSIFICATION MODELS)
-    target_link_libraries(SKIN_LESION_SEGMENTATION MODELS)
+    target_link_libraries(MODELS UTILS)  
+    target_link_libraries(DIGITS_CLASSIFICATION MODELS)
+    target_link_libraries(DIGITS_EXTRACTION MODELS)
     include_directories("${ecvl_DIR}/include")
     message(STATUS "ECVL found")
 endif()
 
-# Download and unpack MNIST dataset if necessary
-if(DOWNLOAD_MNIST)
-    if (EXISTS "${CMAKE_BINARY_DIR}/mnist.zip")
-        message(STATUS "${CMAKE_BINARY_DIR}/mnist.zip already exists, download skipped!")
+# Download and unpack CHARSET dataset if necessary
+if(DOWNLOAD_CHARSET)
+    if (EXISTS "${CMAKE_BINARY_DIR}/charset.zip")
+        message(STATUS "${CMAKE_BINARY_DIR}/charset.zip already exists, download skipped!")
     else()
-        message(STATUS "Downloading MNIST...")
-        file(DOWNLOAD http://imagelab.ing.unimore.it/files/DeepHealth/mnist.zip "${CMAKE_BINARY_DIR}/mnist.zip"
+        message(STATUS "Downloading CHARSET...")
+        file(DOWNLOAD http://imagelab.ing.unimore.it/files/DeepHealth/charset.zip "${CMAKE_BINARY_DIR}/charset.zip"
             TIMEOUT 60
             STATUS status
             SHOW_PROGRESS
         )
         list( GET status 0 error_code )
         if( error_code )
-            message(ERROR " Cmake is not able to download the mnist dataset. \nPlease, retry or download it manually (The dataset is also available at https://drive.google.com/file/d/1uWUkP3vMx1MWwOnZud7JhxcfmI2PZvv3/view?usp=sharing).")
-            if(EXISTS "${CMAKE_BINARY_DIR}/mnist.zip")
-                file(REMOVE "${CMAKE_BINARY_DIR}/mnist.zip")
+            message(ERROR " Cmake is not able to download the charset dataset. \nPlease, retry.")
+            if(EXISTS "${CMAKE_BINARY_DIR}/charset.zip")
+                file(REMOVE "${CMAKE_BINARY_DIR}/charset.zip")
             endif()
         else()
             message(STATUS "Downloading done.")
         endif()
 
-        if(EXISTS "${CMAKE_BINARY_DIR}/mnist.zip")
+        if(EXISTS "${CMAKE_BINARY_DIR}/charset.zip")
             message(STATUS "Unpacking (it may take a while)...")
-            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf "${CMAKE_BINARY_DIR}/mnist.zip" WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" OUTPUT_QUIET)
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf "${CMAKE_BINARY_DIR}/charset.zip" WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" OUTPUT_QUIET)
+            message(STATUS "Unpacking done.")
+        endif()
+    endif()
+    if (EXISTS "${CMAKE_BINARY_DIR}/charset_original.zip")
+        message(STATUS "${CMAKE_BINARY_DIR}/charset_original.zip already exists, download skipped!")
+    else()
+        message(STATUS "Downloading CHARSET ORIGINAL...")
+        file(DOWNLOAD http://imagelab.ing.unimore.it/files/DeepHealth/charset_original.zip "${CMAKE_BINARY_DIR}/charset_original.zip"
+            TIMEOUT 60
+            STATUS status
+            SHOW_PROGRESS
+        )
+        list( GET status 0 error_code )
+        if( error_code )
+            message(ERROR " Cmake is not able to download the charset dataset. \nPlease, retry.")
+            if(EXISTS "${CMAKE_BINARY_DIR}/charset_original.zip")
+                file(REMOVE "${CMAKE_BINARY_DIR}/charset_original.zip")
+            endif()
+        else()
+            message(STATUS "Downloading done.")
+        endif()
+
+        if(EXISTS "${CMAKE_BINARY_DIR}/charset_original.zip")
+            message(STATUS "Unpacking (it may take a while)...")
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf "${CMAKE_BINARY_DIR}/charset_original.zip" WORKING_DIRECTORY "${CMAKE_BINARY_DIR}" OUTPUT_QUIET)
             message(STATUS "Unpacking done.")
         endif()
     endif()
